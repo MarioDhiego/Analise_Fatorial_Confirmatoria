@@ -1,5 +1,5 @@
 # ==============================================================================
-# SCRIPT R MESTRE INTEGRAL E REPRODUTÍVEL DE ANÁLISE DE DADOS
+# SCRIPT R MESTRE DEFINITIVO E REPRODUTÍVEL DE ANÁLISE DE DADOS
 # Pesquisa: Adoção de Práticas Socioambientais em PMEs
 # Autor: Marcelo Vianna (2026)
 # ==============================================================================
@@ -7,18 +7,7 @@
 # ------------------------------------------------------------------------------
 # BLOCO 1: CARREGAMENTO DE PACOTES E BASE DE DADOS
 # ------------------------------------------------------------------------------
-if(!require(readxl)) install.packages("readxl")
-if(!require(dplyr)) install.packages("dplyr")
-if(!require(rstatix)) install.packages("rstatix")
-if(!require(writexl)) install.packages("writexl")
-if(!require(likert)) install.packages("likert")
-if(!require(ggplot2)) install.packages("ggplot2")
-if(!require(patchwork)) install.packages("patchwork")
-if(!require(lavaan)) install.packages("lavaan")
-if(!require(semTools)) install.packages("semTools")
-if(!require(semPlot)) install.packages("semPlot")
-if(!require(reshape2)) install.packages("reshape2")
-if(!require(sjPlot)) install.packages("sjPlot")
+
 
 library(readxl)
 library(dplyr)
@@ -36,13 +25,13 @@ library(sjPlot)
 # Leitura e preparação da base de dados
 dados <- read_excel("Análise_Marcelo_Vianna.xlsx", sheet = "Banco1")
 
-# Mapeando as colunas das dimensões do instrumento
+# Mapeando as colunas das 9 dimensões originais do instrumento
 itens_cols <- c(paste0("P", 1:6), paste0("B", 1:6), paste0("PA", 1:8),
                 paste0("PS", 1:5), paste0("D", 1:10), paste0("INT", 1:4),
                 paste0("ATT", 1:4), paste0("NS", 1:5), paste0("CCP", 1:5))
 
 df_itens <- dados %>% select(all_of(itens_cols)) %>% na.omit()
-cat("\n[✓] Dados carregados. Amostra N =", nrow(df_itens), "\n")
+cat("\n[✓] Dados carregados com sucesso. Amostra N =", nrow(df_itens), "\n")
 
 
 # ------------------------------------------------------------------------------
@@ -111,7 +100,6 @@ cat("\n====================================================================\n")
 
 df_invariancia <- data.frame()
 
-# Mann-Whitney U para Cargo
 for(d in dims) {
   teste <- wilcox.test(get(d) ~ GARGO, data = dados)
   df_invariancia <- rbind(df_invariancia, data.frame(
@@ -122,7 +110,6 @@ for(d in dims) {
   ))
 }
 
-# Kruskal-Wallis para Multinomiais
 multinomiais <- c("GENERO", "IDADE", "RAÇA", "ESCOLARIDADE_REC", "TEMPO_CARGO", 
                   "LOCAL_EMPRESA", "RAMO_CLEAN", "FAIXA_FUNCIONARIOS", "FAT_ANUAL_EMPRESA")
 
@@ -205,12 +192,107 @@ ggplot(df_heat, aes(x = Var2, y = Var1, fill = value)) +
 
 
 # ------------------------------------------------------------------------------
-# BLOCO 3: PURIFICAÇÃO DO MODELO DE MENSURAÇÃO (MODELOS V1 A V6 DETALHADOS)
+# BLOCO 3: ANÁLISE DESCRITIVA DAS RESPOSTAS DOS ITENS (GRÁFICOS DE LIKERT)
+# ------------------------------------------------------------------------------
+cat("\n====================================================================\n")
+cat(" GERAÇÃO DOS GRÁFICOS DE DIVERGÊNCIA DE LIKERT (9 DIMENSÕES)")
+cat("\n====================================================================\n")
+
+labels_likert <- c("Discordo Totalmente", "Discordo", "Neutro", "Concordo", "Concordo Totalmente")
+
+df_graficos <- df_itens %>%
+  mutate(across(everything(), ~ factor(.x, levels = 1:5, labels = labels_likert, ordered = TRUE))) %>%
+  as.data.frame()
+
+minhas_cores <- c("#D7191C", "#F46D43", "#E0E0E0", "#74C476", "#238B45")
+
+# 3.1 - Pressão (P1 a P6)
+obj_pressao <- likert(df_graficos[, paste0("P", 1:6)])
+grafico_pressao <- plot(obj_pressao, colors = minhas_cores) + 
+  ggtitle("PRESSÃO") + theme_minimal() + 
+  theme(legend.position = "bottom", legend.title = element_blank(),
+        plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+        axis.text.y = element_text(size = 12, face = "bold"))
+print(grafico_pressao)
+
+# 3.2 - Barreiras (B1 a B6)
+obj_barreiras <- likert(df_graficos[, paste0("B", 1:6)])
+grafico_barreiras <- plot(obj_barreiras, colors = minhas_cores) + 
+  ggtitle("BARREIRAS") + theme_minimal() + 
+  theme(legend.position = "bottom", legend.title = element_blank(),
+        plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+        axis.text.y = element_text(size = 12, face = "bold"))
+print(grafico_barreiras)
+
+# 3.3 - Práticas (PA1 a PA8)
+obj_praticas <- likert(df_graficos[, paste0("PA", 1:8)])
+grafico_praticas <- plot(obj_praticas, colors = minhas_cores) + 
+  ggtitle("PRÁTICAS") + theme_minimal() + 
+  theme(legend.position = "bottom", legend.title = element_blank(),
+        plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+        axis.text.y = element_text(size = 12, face = "bold"))
+print(grafico_praticas)
+
+# 3.4 - Práticas Sociais (PS1 a PS5)
+obj_praticas_sociais <- likert(df_graficos[, paste0("PS", 1:5)])
+grafico_praticas_sociais <- plot(obj_praticas_sociais, colors = minhas_cores) + 
+  ggtitle("Práticas Sociais") + theme_minimal() + 
+  theme(legend.position = "bottom", legend.title = element_blank(),
+        plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+        axis.text.y = element_text(size = 12, face = "bold"))
+print(grafico_praticas_sociais)
+
+# 3.5 - Desempenho Operacional (D1 a D10)
+obj_desempenho <- likert(df_graficos[, paste0("D", 1:10)])
+grafico_desempenho <- plot(obj_desempenho, colors = minhas_cores) + 
+  ggtitle("Desempenho Operacional") + theme_minimal() + 
+  theme(legend.position = "bottom", legend.title = element_blank(),
+        plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+        axis.text.y = element_text(size = 12, face = "bold"))
+print(grafico_desempenho)
+
+# 3.6 - Intenção (INT1 a INT4)
+obj_intencao <- likert(df_graficos[, paste0("INT", 1:4)])
+grafico_intencao <- plot(obj_intencao, colors = minhas_cores) + 
+  ggtitle("Intenção") + theme_minimal() + 
+  theme(legend.position = "bottom", legend.title = element_blank(),
+        plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+        axis.text.y = element_text(size = 12, face = "bold"))
+print(grafico_intencao)
+
+# 3.7 - Atitudes (ATT1 a ATT4)
+obj_atitudes <- likert(df_graficos[, paste0("ATT", 1:4)])
+grafico_atitudes <- plot(obj_atitudes, colors = minhas_cores) + 
+  ggtitle("Atitudes") + theme_minimal() + 
+  theme(legend.position = "bottom", legend.title = element_blank(),
+        plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+        axis.text.y = element_text(size = 12, face = "bold"))
+print(grafico_atitudes)
+
+# 3.8 - Norma Subjetiva (NS1 a NS5)
+obj_norma <- likert(df_graficos[, paste0("NS", 1:5)])
+grafico_norma <- plot(obj_norma, colors = minhas_cores) + 
+  ggtitle("Norma Subjetiva") + theme_minimal() + 
+  theme(legend.position = "bottom", legend.title = element_blank(),
+        plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+        axis.text.y = element_text(size = 12, face = "bold"))
+print(grafico_norma)
+
+# 3.9 - Controle Comportamental Percebido (CCP1 a CCP5)
+obj_controle <- likert(df_graficos[, paste0("CCP", 1:5)])
+grafico_controle <- plot(obj_controle, colors = minhas_cores) + 
+  ggtitle("Controle Comportamental Percebido") + theme_minimal() + 
+  theme(legend.position = "bottom", legend.title = element_blank(),
+        plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+        axis.text.y = element_text(size = 12, face = "bold"))
+print(grafico_controle)
+
+
+# ------------------------------------------------------------------------------
+# BLOCO 4: PURIFICAÇÃO DO MODELO DE MENSURAÇÃO (MODELOS V1 A V6 DETALHADOS)
 # ------------------------------------------------------------------------------
 
-# ==========================================
 # MODELO V1 (6 DIMENSÕES - TODOS OS ITENS)
-# ==========================================
 cat("\n====================================================================\n")
 cat(" MODELO AFC V1 (6 DIMENSÕES - TODOS OS ITENS)")
 cat("\n====================================================================\n")
@@ -234,9 +316,7 @@ semPaths(ajuste_afc_6dim, what = "paths", whatLabels = "std", layout = "tree2", 
          residuals = FALSE, edge.label.cex = 0.8, label.cex = 1.0, label.scale = FALSE, mar = c(2, 4, 2, 4), title = FALSE)
 
 
-# ==========================================
-# MODELO V2 (6 DIMENSÕES - REMOVENDO P1)
-# ==========================================
+# MODELO V2 (6 DIMENSÕES - SEM P1)
 cat("\n====================================================================\n")
 cat(" MODELO AFC V2 (6 DIMENSÕES - SEM P1)")
 cat("\n====================================================================\n")
@@ -260,9 +340,7 @@ semPaths(ajuste_afc_6dim_v2, what = "paths", whatLabels = "std", layout = "tree2
          residuals = FALSE, edge.label.cex = 0.8, label.cex = 1.0, label.scale = FALSE, mar = c(2, 4, 2, 4), title = FALSE)
 
 
-# ==========================================
 # MODELO V3 (6 DIMENSÕES - SEM P1 E P3)
-# ==========================================
 cat("\n====================================================================\n")
 cat(" MODELO AFC V3 (6 DIMENSÕES - SEM P1 E P3)")
 cat("\n====================================================================\n")
@@ -285,7 +363,6 @@ semPaths(ajuste_afc_6dim_v3, what = "paths", whatLabels = "std", layout = "tree2
          color = list(lat = "#EAEAEA", man = "#FFFFFF"), sizeMan = 3, sizeLat = 7, intercepts = FALSE,
          residuals = FALSE, edge.label.cex = 0.8, label.cex = 1.0, label.scale = FALSE, mar = c(2, 4, 2, 4), title = FALSE)
 
-# INVESTIGAÇÃO CLÍNICA (ÍNDICES DE MODIFICAÇÃO V3)
 indices_mod <- modindices(ajuste_afc_6dim_v3)
 cargas_cruzadas <- subset(indices_mod, op == "=~")
 cat("\n[!] MAIORES CARGAS CRUZADAS (MI > 10):\n")
@@ -297,9 +374,7 @@ cat("\n[!] MAIORES CORRELAÇÕES DE ERRO (MI > 15):\n")
 print(head(erros_correlacionados[order(-erros_correlacionados$mi), ], 15))
 
 
-# ==========================================
 # MODELO V4 (6 DIMENSÕES - SEM P1, P3 E D8)
-# ==========================================
 cat("\n====================================================================\n")
 cat(" MODELO AFC V4 (6 DIMENSÕES - SEM P1, P3 E D8)")
 cat("\n====================================================================\n")
@@ -323,9 +398,7 @@ semPaths(ajuste_afc_6dim_v4, what = "paths", whatLabels = "std", layout = "tree2
          residuals = FALSE, edge.label.cex = 0.8, label.cex = 1.0, label.scale = FALSE, mar = c(2, 4, 2, 4), title = FALSE)
 
 
-# ==============================================
 # MODELO V5 (6 DIMENSÕES - SEM P1, P3, D8 E D1)
-# ==============================================
 cat("\n====================================================================\n")
 cat(" MODELO AFC V5 (6 DIMENSÕES - SEM P1, P3, D8 E D1)")
 cat("\n====================================================================\n")
@@ -349,9 +422,7 @@ semPaths(ajuste_afc_6dim_v5, what = "paths", whatLabels = "std", layout = "tree2
          residuals = FALSE, edge.label.cex = 0.8, label.cex = 1.0, label.scale = FALSE, mar = c(2, 4, 2, 4), title = FALSE)
 
 
-# ==================================================
 # MODELO V6 (6 DIMENSÕES - SEM P1, P3, D8, D1 E D6)
-# ==================================================
 cat("\n====================================================================\n")
 cat(" MODELO AFC V6 (6 DIMENSÕES - SEM P1, P3, D8, D1 E D6)")
 cat("\n====================================================================\n")
@@ -376,7 +447,7 @@ semPaths(ajuste_afc_6dim_v6, what = "paths", whatLabels = "std", layout = "tree2
 
 
 # ------------------------------------------------------------------------------
-# BLOCO 4: MODELO DE MENSURAÇÃO FINAL DEFINITIVO (5 DIMENSÕES)
+# BLOCO 5: MODELO DE MENSURAÇÃO FINAL DEFINITIVO (5 DIMENSÕES)
 # ------------------------------------------------------------------------------
 cat("\n====================================================================\n")
 cat(" MODELO DEFINITIVO DE MENSURAÇÃO (5 DIMENSÕES)")
@@ -402,7 +473,7 @@ print(round(matriz_correlacao_final, 3))
 matriz_htmt_final <- htmt(modelo_afc_final, data = dados, ordered = TRUE)
 print(round(matriz_htmt_final, 3))
 
-# Diagramas do Modelo Final (Padrão e Estilo SmartPLS)
+# Diagramas do Modelo Final
 semPaths(ajuste_afc_final, what = "paths", whatLabels = "std", layout = "tree2",
          edge.color = "black", color = list(lat = "#EAEAEA", man = "#FFFFFF"),
          sizeMan = 3.5, sizeLat = 8, intercepts = FALSE, residuals = FALSE,
@@ -417,7 +488,7 @@ semPaths(ajuste_afc_final, what = "paths", whatLabels = "std", layout = "tree", 
 
 
 # ------------------------------------------------------------------------------
-# BLOCO 5: MODELO ESTRUTURAL (SEM) COMPLETO E MODELO BASE (H1, H2, H3)
+# BLOCO 6: MODELO ESTRUTURAL (SEM) COMPLETO E MODELO BASE (H1, H2, H3)
 # ------------------------------------------------------------------------------
 cat("\n====================================================================\n")
 cat(" MODELO ESTRUTURAL COMPLETO (SEM)")
@@ -487,7 +558,7 @@ semPaths(ajuste_sem_base, what = "paths", whatLabels = "std", layout = "tree2", 
 
 
 # ------------------------------------------------------------------------------
-# BLOCO 6: BLINDAGEM METODOLÓGICA (HARMAN CMB E MEDIAÇÃO)
+# BLOCO 7: BLINDAGEM METODOLÓGICA (HARMAN CMB E MEDIAÇÃO)
 # ------------------------------------------------------------------------------
 cat("\n====================================================================\n")
 cat(" TESTE DO VIÉS DE MÉTODO COMUM (HARMAN)")
@@ -528,7 +599,7 @@ print(tabela_mediacao)
 
 
 # ------------------------------------------------------------------------------
-# BLOCO 7: MODERAÇÃO (H4a E H4b) VIA ESCORES FATORIAIS
+# BLOCO 8: MODERAÇÃO (H4a E H4b) VIA ESCORES FATORIAIS
 # ------------------------------------------------------------------------------
 cat("\n====================================================================\n")
 cat(" TESTE DE MODERAÇÃO E MODELO ESTRUTURAL COMPLETO (ESCORES)")
@@ -560,9 +631,9 @@ print(round(lavInspect(ajuste_moderacao, "rsquare"), 3))
 
 
 # ------------------------------------------------------------------------------
-# BLOCO 8: GRÁFICOS FINAIS (SLOPES E LAYOUT MANUAL COM MATRIZ)
+# BLOCO 9: GRÁFICOS FINAIS (SLOPES E LAYOUT MANUAL COM MATRIZ)
 # ------------------------------------------------------------------------------
-# 8.1 - Gráfico de Interação (H4a)
+# 9.1 - Gráfico de Interação (H4a)
 mod_lm <- lm(Praticas ~ Pressao * Intencao, data = escores)
 
 plot_model(mod_lm, type = "int", mdrt.values = "meansd",
@@ -583,7 +654,7 @@ plot_model(mod_lm, type = "int", mdrt.values = "meansd",
     plot.margin = margin(t = 15, r = 15, b = 20, l = 15)
   )
 
-# 8.2 - Diagrama Estrutural Completo em Layout Rotação 1 e Matriz Manual
+# 9.2 - Diagrama Estrutural Completo em Layout Rotação 1 e Matriz Manual
 cores_pls_mod <- list(man = "#3399FF")
 
 semPaths(ajuste_moderacao, what = "paths", whatLabels = "std", layout = "tree2", rotation = 1, nCharNodes = 0,
@@ -594,7 +665,7 @@ semPaths(ajuste_moderacao, what = "paths", whatLabels = "std", layout = "tree2",
          color = cores_pls_mod, edge.color = "black", border.color = "black", label.color = "black",
          mar = c(6, 4, 6, 4), title = FALSE)
 
-# Matriz de Layout Manual (Perfeição visual limpa)
+# Matriz de Layout Manual
 matriz_layout <- matrix(c(
   0.0,  0.0,  # 1: Práticas
   0.0, -1.0,  # 2: Desempenho Operacional
@@ -613,5 +684,9 @@ semPaths(ajuste_moderacao, what = "paths", whatLabels = "std", layout = matriz_l
          label.color = "black", intercepts = FALSE, residuals = FALSE, mar = c(5, 5, 5, 5), title = FALSE)
 
 cat("\n====================================================================\n")
-cat("[✓] SCRIPT MESTRE 100% REPRODUTÍVEL EXECUTADO COM SUCESSO!\n")
+cat("[✓] SCRIPT MESTRE INTEGRAL EXECUTADO COM SUCESSO!\n")
 cat("====================================================================\n")
+
+
+
+
